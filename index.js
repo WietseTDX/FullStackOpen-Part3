@@ -14,7 +14,7 @@ morgan.format('custom', ':method :url :status :res[content-length] - :response-t
 app.use(morgan('custom'));
 
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:3001'];
+const allowedOrigins = [''];
 
 const corsOptions = {
   origin: (origin, callback) => {
