@@ -14,7 +14,7 @@ morgan.format('custom', ':method :url :status :res[content-length] - :response-t
 app.use(morgan('custom'));
 
 
-const allowedOrigins = ['http://localhost:5173',];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3001'];
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -35,24 +35,24 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 let persons = [
-  { 
+  {
     "id": "1",
-    "name": "Arto Hellas", 
+    "name": "Arto Hellas",
     "number": "040-123456"
   },
-  { 
+  {
     "id": "2",
-    "name": "Ada Lovelace", 
+    "name": "Ada Lovelace",
     "number": "39-44-5323523"
   },
-  { 
+  {
     "id": "3",
-    "name": "Dan Abramov", 
+    "name": "Dan Abramov",
     "number": "12-43-234345"
   },
-  { 
+  {
     "id": "4",
-    "name": "Mary Poppendieck", 
+    "name": "Mary Poppendieck",
     "number": "39-23-6423122"
   }
 ];
@@ -62,51 +62,74 @@ function getRandomInt(min, max) {
 }
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  response.json(persons);
 });
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  const person = persons.find(person => person.id === id)
-  
+  const id = request.params.id;
+  console.log(persons);
+  console.log(id);
+  const person = persons.find(person => person.id === id);
+
   if (person) {
-    response.json(person)
+    response.status(200).json(person);
   } else {
-    response.status(404).end()
+    response.status(404).end();
   }
-  
+
 });
 
 app.delete('/api/persons/:id', (request, response) => {
-  const id = request.params.id
-  persons = persons.filter(person => person.id !== id)
-  
-  response.status(204).end()
+  const id = request.params.id;
+  const personIndex = persons.findIndex(person => person.id === id);
+
+  if (personIndex !== -1) {
+    const deletedPerson = persons[personIndex];
+    persons = persons.filter(person => person.id !== id);
+    response.status(200).json(deletedPerson);
+  } else {
+    response.status(404).json({ message: 'Person not found' });
+  }
+});
+
+app.put('/api/persons/:id', (request, response) => {
+  const id = request.params.id;
+  const body = request.body;
+
+  console.log("Testing PUT")
+  console.log(id)
+  console.log(body)
+
+  persons = persons.map((person) =>
+    person.id !== id ? person : body
+  )
+
+  response.status(200).json(body);
 });
 
 
 app.post('/api/persons', (request, response) => {
-  const body = request.body
-  
+  const body = request.body;
+
   if (!body.name && !body.number) {
-    return response.status(400).json({ 
-      error: 'content missing' 
-    })
+    return response.status(400).json({
+      error: 'content missing'
+    });
   } else if (persons.some(person => person.name === body.name)) {
-    return response.status(400).json({ 
-      error: 'name must be unique' 
-    })
+    return response.status(400).json({
+      error: 'name must be unique'
+    });
   }
-  
+
   const person = {
     name: body.name,
     number: body.number,
-    id: getRandomInt(0, 65535),
-  }
-  
-  persons = persons.concat(person)
-  
-  response.json(person)
+    id: getRandomInt(0, 65535).toString(),
+  };
+
+  persons = persons.concat(person);
+
+  response.json(person);
 });
 
 app.get('/info', (request, response) => {
@@ -118,18 +141,18 @@ app.get('/info', (request, response) => {
   </div>
   <div>${datetime.toString()}</div>
   </div>
-  `
-  
+  `;
+
   response.send(infoData);
 });
 
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: 'unknown endpoint' })
+  response.status(404).send({ error: 'unknown endpoint' });
 }
 
 app.use(unknownEndpoint);
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`);
 });
