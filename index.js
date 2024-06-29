@@ -2,7 +2,6 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 require('dotenv').config();
-require('dotenv').config({ path: '.env.local' });
 const app = express();
 
 app.use(express.json());
