@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+require('dotenv').config({ path: '.env.local' });
 const app = express();
 
 app.use(express.json());
@@ -14,7 +15,7 @@ morgan.format('custom', ':method :url :status :res[content-length] - :response-t
 app.use(morgan('custom'));
 
 
-const allowedOrigins = [''];
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -97,10 +98,6 @@ app.delete('/api/persons/:id', (request, response) => {
 app.put('/api/persons/:id', (request, response) => {
   const id = request.params.id;
   const body = request.body;
-
-  console.log("Testing PUT")
-  console.log(id)
-  console.log(body)
 
   persons = persons.map((person) =>
     person.id !== id ? person : body
