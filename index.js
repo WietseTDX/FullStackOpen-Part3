@@ -7,13 +7,14 @@ const MongoDB = require("./modules/PhoneBook");
 
 const app = express();
 
-app.use(express.static("dist"))
+app.use(express.static("dist"));
 app.use(express.json());
 
-morgan.token("req-body", (req, res) => {
+morgan.token("req-body", (req, res) => {    // eslint-disable-line no-unused-vars
   return JSON.stringify(req.body);
 });
-morgan.format("custom", ":method :url :status :res[content-length] - :response-time ms ":req-body"");
+
+morgan.format("custom", ":method :url :status :res[content-length] - :response-time ms ':req-body'");
 
 app.use(morgan("custom"));
 
@@ -50,7 +51,7 @@ app.get("/api/persons/:id", (request, response, next) => {
       if (result) {
         response.status(200).json(result);
       } else {
-        response.status(404).end()
+        response.status(404).end();
       }
     })
     .catch((error) => next(error));
@@ -72,16 +73,16 @@ app.put("/api/persons/:id", (request, response) => {
   const body = request.body;
 
   MongoDB.findByIdAndUpdate(request.params.id, body, { new: true, runValidators: true })
-    .then((result) => {
+    .then((result) => {    // eslint-disable-line no-unused-vars
       response.status(200).json(body);
     })
     .catch((error) => {
-      if (error.name == "ValidationError") {
+      if (error.name === "ValidationError") {
         const errors = Object.values(error.errors);
         for (const err of errors) {
-          if (err.path == "name" && err.kind == "minlength") {
+          if (err.path === "name" && err.kind === "minlength") {
             return response.status(400).send({ error: "Name must be at leased 3 chars long" });
-          } else if (err.path == "number" && err.kind == "user defined") {
+          } else if (err.path === "number" && err.kind === "user defined") {
             return response.status(400).send({ error: "The number must be a total of 8 digits and 2-3 digits before -" });
           }
         }
@@ -90,7 +91,7 @@ app.put("/api/persons/:id", (request, response) => {
 });
 
 
-app.post("/api/persons", (request, response, next) => {
+app.post("/api/persons", (request, response) => {    // eslint-disable-line no-unused-vars
   const body = request.body;
 
   if (!body.name && !body.number) {
@@ -103,7 +104,7 @@ app.post("/api/persons", (request, response, next) => {
     name: body.name,
     number: body.number
   }).then((SetPerson) => {
-    response.json(SetPerson)
+    response.json(SetPerson);
   }).catch((error) => {
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors);
@@ -121,14 +122,14 @@ app.post("/api/persons", (request, response, next) => {
 const errorHandler = (error, request, response, next) => {
   console.error(error.message);
 
-  if (error.name == "CastError") {
+  if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" });
-  } else if (error.name == "BSONError") {
+  } else if (error.name === "BSONError") {
     return response.status(400).send({ error: "id must be 24 chars" });
   }
 
-  next(error)
-}
+  next(error);
+};
 
 app.get("/info", (request, response) => {
   MongoDB.find({}).then((mongoData) => {
@@ -151,7 +152,7 @@ app.use(errorHandler);
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: "unknown endpoint" });
-}
+};
 
 app.use(unknownEndpoint);
 

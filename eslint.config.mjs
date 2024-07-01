@@ -29,10 +29,6 @@ export default [
         'error',
         'double'
       ],
-      '@stylistic/js/semi': [
-        'error',
-        'never'
-      ],
       'eqeqeq': 'error',
       'no-trailing-spaces': 'error',
       'object-curly-spacing': [
@@ -42,9 +38,11 @@ export default [
         'error', { 'before': true, 'after': true },
       ],
       'no-console': 'off',
+      "no-extra-semi": "off",
+      "semi": ["error", "always"],
     },
   },
-  { 
+  {
     ignores: ["dist/**", "build/**"],
   },
 ]
