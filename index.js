@@ -10,7 +10,8 @@ const app = express();
 app.use(express.static("dist"));
 app.use(express.json());
 
-morgan.token("req-body", (req, res) => {    // eslint-disable-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
+morgan.token("req-body", (req, _res) => {
   return JSON.stringify(req.body);
 });
 
@@ -39,7 +40,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.get("/api/persons", (request, response) => {
+app.get("/api/persons", (_request, response) => {
   MongoDB.find({}).then((mongoData) => {
     response.json(mongoData);
   });
@@ -73,7 +74,8 @@ app.put("/api/persons/:id", (request, response) => {
   const body = request.body;
 
   MongoDB.findByIdAndUpdate(request.params.id, body, { new: true, runValidators: true })
-    .then((result) => {    // eslint-disable-line no-unused-vars
+    // eslint-disable-next-line no-unused-vars
+    .then((_result) => {
       response.status(200).json(body);
     })
     .catch((error) => {
@@ -91,7 +93,7 @@ app.put("/api/persons/:id", (request, response) => {
 });
 
 
-app.post("/api/persons", (request, response) => {    // eslint-disable-line no-unused-vars
+app.post("/api/persons", (request, response) => {
   const body = request.body;
 
   if (!body.name && !body.number) {
@@ -119,7 +121,7 @@ app.post("/api/persons", (request, response) => {    // eslint-disable-line no-u
   });
 });
 
-const errorHandler = (error, request, response, next) => {
+const errorHandler = (error, _request, response, next) => {
   console.error(error.message);
 
   if (error.name === "CastError") {
@@ -131,7 +133,7 @@ const errorHandler = (error, request, response, next) => {
   next(error);
 };
 
-app.get("/info", (request, response) => {
+app.get("/info", (_request, response) => {
   MongoDB.find({}).then((mongoData) => {
     var datetime = new Date();
     const infoData = `
@@ -150,7 +152,7 @@ app.get("/info", (request, response) => {
 
 app.use(errorHandler);
 
-const unknownEndpoint = (request, response) => {
+const unknownEndpoint = (_request, response) => {
   response.status(404).send({ error: "unknown endpoint" });
 };
 
