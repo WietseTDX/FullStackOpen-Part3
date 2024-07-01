@@ -2,10 +2,13 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 require('dotenv').config();
+
+const MongoDB = require('./modules/PhoneBook');
+
 const app = express();
 
+app.use(express.static('dist'))
 app.use(express.json());
-
 
 morgan.token('req-body', (req, res) => {
   return JSON.stringify(req.body);
@@ -35,115 +38,116 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.static('dist'))
-
-let persons = [
-  {
-    "id": "1",
-    "name": "Arto Hellas",
-    "number": "040-123456"
-  },
-  {
-    "id": "2",
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523"
-  },
-  {
-    "id": "3",
-    "name": "Dan Abramov",
-    "number": "12-43-234345"
-  },
-  {
-    "id": "4",
-    "name": "Mary Poppendieck",
-    "number": "39-23-6423122"
-  }
-];
-
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 app.get('/api/persons', (request, response) => {
-  response.json(persons);
+  MongoDB.find({}).then((mongoData) => {
+    response.json(mongoData);
+  });
 });
 
-app.get('/api/persons/:id', (request, response) => {
-  const id = request.params.id;
-  console.log(persons);
-  console.log(id);
-  const person = persons.find(person => person.id === id);
-
-  if (person) {
-    response.status(200).json(person);
-  } else {
-    response.status(404).end();
-  }
-
+app.get('/api/persons/:id', (request, response, next) => {
+  MongoDB.findById(request.params.id)
+    .then((result) => {
+      if (result) {
+        response.status(200).json(result);
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch((error) => next(error));
 });
 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = request.params.id;
-  const personIndex = persons.findIndex(person => person.id === id);
-
-  if (personIndex !== -1) {
-    const deletedPerson = persons[personIndex];
-    persons = persons.filter(person => person.id !== id);
-    response.status(200).json(deletedPerson);
-  } else {
-    response.status(404).json({ message: 'Person not found' });
-  }
+app.delete('/api/persons/:id', (request, response, next) => {
+  MongoDB.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      if (result) {
+        response.status(200).json(result);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
 });
 
 app.put('/api/persons/:id', (request, response) => {
-  const id = request.params.id;
   const body = request.body;
 
-  persons = persons.map((person) =>
-    person.id !== id ? person : body
-  )
-
-  response.status(200).json(body);
+  MongoDB.findByIdAndUpdate(request.params.id, body, { new: true, runValidators: true })
+    .then((result) => {
+      response.status(200).json(body);
+    })
+    .catch((error) => {
+      if (error.name == "ValidationError") {
+        const errors = Object.values(error.errors);
+        for (const err of errors) {
+          if (err.path == "name" && err.kind == "minlength") {
+            return response.status(400).send({ error: "Name must be at leased 3 chars long" });
+          } else if (err.path == "number" && err.kind == "user defined") {
+            return response.status(400).send({ error: "The number must be a total of 8 digits and 2-3 digits before -" });
+          }
+        }
+      }
+    });
 });
 
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body;
 
   if (!body.name && !body.number) {
     return response.status(400).json({
       error: 'content missing'
     });
-  } else if (persons.some(person => person.name === body.name)) {
-    return response.status(400).json({
-      error: 'name must be unique'
-    });
   }
 
-  const person = {
+  MongoDB.create({
     name: body.name,
-    number: body.number,
-    id: getRandomInt(0, 65535).toString(),
-  };
-
-  persons = persons.concat(person);
-
-  response.json(person);
+    number: body.number
+  }).then((SetPerson) => {
+    response.json(SetPerson)
+  }).catch((error) => {
+      if (error.name == "ValidationError") {
+        const errors = Object.values(error.errors);
+        for (const err of errors) {
+          if (err.path == "name" && err.kind == "minlength") {
+            return response.status(400).send({ error: "Name must be at leased 3 chars long" });
+          } else if (err.path == "number" && err.kind == "user defined") {
+            return response.status(400).send({ error: "The number must be a total of 8 digits and 2-3 digits before -" });
+          }
+        }
+      }
+    });
 });
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name == "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name == "BSONError") {
+    return response.status(400).send({ error: "id must be 24 chars" });
+  }
+
+  next(error)
+}
+
 app.get('/info', (request, response) => {
-  var datetime = new Date();
-  const infoData = `
+  MongoDB.find({}).then((mongoData) => {
+    var datetime = new Date();
+    const infoData = `
   <div>
   <div>
-  <p>Phonebook has records for ${persons.length} ${persons.length === 1 ? 'person' : 'people'}</p>
+  <p>Phonebook has records for ${mongoData.length} ${mongoData.length === 1 ? 'person' : 'people'}</p>
   </div>
   <div>${datetime.toString()}</div>
   </div>
   `;
 
-  response.send(infoData);
+    response.send(infoData);
+  });
 });
+
+
+app.use(errorHandler);
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' });
